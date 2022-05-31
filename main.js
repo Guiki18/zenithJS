@@ -7,7 +7,7 @@ require('better-logging')(console, {
 const { Client, Collection } = require('discord.js');
 const colors = require('colors/safe');
 const { readdirSync } = require('fs');
-
+require('better-sqlite3')(__dirname + '/database/database.sqlite');
 
 require('dotenv').config({});
 const config = require('./config/config.json');

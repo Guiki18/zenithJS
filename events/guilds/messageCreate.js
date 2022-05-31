@@ -1,13 +1,22 @@
 const colors = require('colors/safe');
 const { Collection, MessageEmbed } = require('discord.js');
 const config = require('../../config/config.json');
-const prefix = config.discord.prefix;
+const db = require('better-sqlite3')(__dirname + '/../../database/database.sqlite');
 
 module.exports = {
 	name: 'messageCreate',
 	once: false,
 	async execute(client, message) {
 		try {
+			let prefix;
+			const dbPrefix = db.prepare('SELECT * FROM prefixes WHERE guild_id = ?').get(message.guild.id);
+			if (!dbPrefix) {
+				prefix = config.discord.prefix;
+			}
+			else {
+				prefix = dbPrefix.prefix;
+			}
+
 			if (!message.content.startsWith(prefix) || message.author.bot) return;
 
 

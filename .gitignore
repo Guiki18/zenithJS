@@ -7,6 +7,9 @@ config/config.json
 # Logs
 logs/
 
+# Database
+database/
+
 # Logs
 logs
 *.log
