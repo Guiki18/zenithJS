@@ -47,6 +47,8 @@ try {
 	});
 
 	client.login(process.env.TOKEN || config.discord.token);
+
+	require('./web/keepAlive')(client);
 }
 catch (error) {
 	console.error(colors.brightRed('Error on main.js file:\n' + error));
