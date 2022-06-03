@@ -1,6 +1,7 @@
 /* eslint-disable no-case-declarations */
 const { MessageEmbed } = require('discord.js');
 const colors = require('colors/safe');
+const { MessageActionRow, MessageSelectMenu } = require('discord.js');
 
 module.exports = {
 	name: 'play',
@@ -109,87 +110,83 @@ module.exports = {
 					.setTitle(`✅ | Adding \`${res.playlist.name}\` playlist with \`${res.tracks.length}\` tracks to queue`)
 					.addField('Duration', `\`\`\`\n❯❯❯ ${playlistDurationTime.hours ? `${playlistDurationTime.hours}h ` : ''}${playlistDurationTime.minutes ? `${playlistDurationTime.minutes}m ` : ''}${playlistDurationTime.seconds}s\n\`\`\``)
 					.setTimestamp()
-					.setFooter({ text: `Requested by: ${res.track.requester.tag}`, iconURL: track.requester.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
+					.setFooter({ text: `Requested by: ${res.playlist.requester.tag}`, iconURL: res.playlist.requester.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
 				return message.channel.send({ embeds: [playlistToQueue] }).then(msg => {
 					setTimeout(() => msg.delete(), 20000);
 				}).catch(err => console.error(colors.brightRed(err)));
 
 			case 'SEARCH_RESULT':
-				let max = 5, collected;
-				const filter = (m) => m.author.id === message.author.id && /^(\d+|end)$/i.test(m.content);
+				const selectMenu = new MessageActionRow()
+					.addComponents(
+						new MessageSelectMenu()
+							.setCustomId('selectmenu')
+							.setPlaceholder('Please select a track to add to the queue')
+							.addOptions([
+								{
+									label: `1 - ${res.tracks[0].title}`,
+									description: `Author: ${res.tracks[0].author} | Duration: ${res.tracks[0].duration}`,
+									value: '1',
+								},
+								{
+									label: `2 - ${res.tracks[1].title}`,
+									description: `Author: ${res.tracks[1].author} | Duration: ${res.tracks[1].duration}`,
+									value: '2',
+								},
+								{
+									label: `3 - ${res.tracks[2].title}`,
+									description: `Author: ${res.tracks[2].author} | Duration: ${res.tracks[2].duration}`,
+									value: '3',
+								},
+								{
+									label: `4 - ${res.tracks[3].title}`,
+									description: `Author: ${res.tracks[3].author} | Duration: ${res.tracks[3].duration}`,
+									value: '4',
+								},
+								{
+									label: `5 - ${res.tracks[4].title}`,
+									description: `Author: ${res.tracks[4].author} | Duration: ${res.tracks[4].duration}`,
+									value: '5',
+								},
+							]),
+					);
 
-				if (res.tracks.length < max) max = res.tracks.length;
-
-				const results = res.tracks
-					.slice(0, max)
-					.map((track, index) => `${++index} - \`${track.title}\``)
-					.join('\n');
-
-				message.channel.send(results);
-
-				try {
-					collected = await message.channel.awaitMessages({ filter, max: 1, time: 30e3, errors: ['time'] });
-				}
-				catch (e) {
-					if (!player.queue.current) player.destroy();
-					const noSelection = new MessageEmbed()
-						.setColor('RED')
-						.setTitle('❌ | No selection made')
-						.setDescription('Please try again.')
-						.setTimestamp()
-						.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-					return message.channel.send({ embeds: [noSelection] }).then(msg => {
-						setTimeout(() => msg.delete(), 20000);
-					}).catch(err => console.error(colors.brightRed(err)));
-				}
-				const first = collected.first().content;
-
-				if (first.toLowerCase() === 'end') {
-					if (!player.queue.current) player.destroy();
-					const cancelledSelection = new MessageEmbed()
-						.setColor('GREEN')
-						.setTitle('✅ | Selection cancelled')
-						.setTimestamp()
-						.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-					return message.channel.send({ embeds: [cancelledSelection] }).then(msg => {
-						setTimeout(() => msg.delete(), 20000);
-					}).catch(err => console.error(colors.brightRed(err)));
-				}
-
-				const index = Number(first) - 1;
-				if (index < 0 || index > max - 1) {
-					const invalidSelection = new MessageEmbed()
-						.setColor('RED')
-						.setTitle('❌ | Invalid selection')
-						.setDescription(`The number you provided too small or too big (1-${max}).`)
-						.setTimestamp()
-						.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-					return message.channel.send({ embeds: [invalidSelection] }).then(msg => {
-						setTimeout(() => msg.delete(), 20000);
-					}).catch(err => console.error(colors.brightRed(err)));
-				}
-
-				const track = res.tracks[index];
-				player.queue.add(track);
-
-				if (!player.playing && !player.paused && !player.queue.size) player.play();
-				const trackDurationTimeMs = track.duration;
-				const trackDurationTime = {
-					hours: Math.floor(trackDurationTimeMs / 3600000),
-					minutes: Math.floor((trackDurationTimeMs % 3600000) / 60000),
-					seconds: Math.floor((trackDurationTimeMs % 60000) / 1000),
-				};
-
-				const addingToQueue = new MessageEmbed()
+				const selectMenuEmbed = new MessageEmbed()
+					.setTitle('🔍 | Search Results')
+					.setDescription('Select a track to add to the queue above on menu')
 					.setColor('GREEN')
-					.setAuthor({ name: `🎵 | Adding: ${track.title} to queue`, iconURL: '', url: track.uri })
-					.addField('Author', `\`\`\`\n❯❯❯ ${track.author}\n\`\`\``, true)
-					.addField('Duration', `\`\`\`\n❯❯❯ ${trackDurationTime.hours ? `${trackDurationTime.hours}h ` : ''}${trackDurationTime.minutes ? `${trackDurationTime.minutes}m ` : ''}${trackDurationTime.seconds}s\n\`\`\``)
 					.setTimestamp()
 					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-				return message.channel.send({ embeds: [addingToQueue] }).then(msg => {
-					setTimeout(() => msg.delete(), 20000);
-				}).catch(err => console.error(colors.brightRed(err)));
+				const selectMsg = await message.channel.send({ embeds: [selectMenuEmbed], components: [selectMenu] });
+
+				// make select menu collector
+				const collector = selectMsg.createMessageComponentCollector({ max: 1, componentType: 'SELECT_MENU', time: 15000 });
+				// eslint-disable-next-line no-undef
+				collector.on('collect', m => {
+					if (m.content === 'end') {
+						collector.stop();
+						selectMsg.delete();
+						return message.react('👌🏻');
+					}
+					else {
+						console.log(m.values);
+
+						const index = Number(m.values) - 1;
+						const track = res.tracks[index];
+						player.queue.add(track);
+
+						if (!player.playing && !player.paused && player.queue.totalSize === 1) player.play();
+
+						const singleTrackToQueue = new MessageEmbed()
+							.setColor('GREEN')
+							.setTitle(`✅ | Adding \`${track.title}\` to queue`)
+							.setThumbnail(track.thumbnail)
+							.setTimestamp()
+							.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
+						return selectMsg.edit({ embeds: [singleTrackToQueue], components: [] }).then(msg => {
+							setTimeout(() => msg.delete(), 20000);
+						}).catch(err => console.error(colors.brightRed(err)));
+					}
+				});
 			}
 		}
 		catch (error) {
