@@ -9,6 +9,8 @@ module.exports = {
 		try {
 			console.log(colors.brightGreen(`${client.user.tag} is online!`));
 			client.user.setActivity('Under dev', { type: 'WATCHING' });
+			client.manager.init(client.user.id);
+			client.on('raw', (d) => client.manager.updateVoiceState(d));
 			db.prepare('CREATE TABLE IF NOT EXISTS prefixes (guild_id INT, prefix VARCHAR)').run();
 		}
 		catch (error) {

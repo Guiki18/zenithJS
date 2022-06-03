@@ -47,7 +47,6 @@ try {
 	});
 
 	client.login(process.env.TOKEN || config.discord.token);
-
 	require('./web/keepAlive')(client);
 }
 catch (error) {

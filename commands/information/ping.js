@@ -7,7 +7,7 @@ module.exports = {
 	cooldown: 5,
 	args: false,
 	usage: '',
-	guildOnly: true,
+	guildOnly: false,
 	aliases: ['latency'],
 
 	// eslint-disable-next-line no-unused-vars
