@@ -22,7 +22,7 @@ module.exports = {
 				.setThumbnail(client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }))
 				.setTimestamp()
 				.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-			return msg.edit({ embeds: [pingEmbed] });
+			return msg.edit({ embeds: [pingEmbed], content: null });
 		}
 		catch (error) {
 			console.log(colors.brightRed(error));

@@ -1,7 +1,17 @@
+/* eslint-disable no-mixed-spaces-and-tabs */
 /* eslint-disable no-case-declarations */
 const { MessageEmbed } = require('discord.js');
 const colors = require('colors/safe');
 const { MessageActionRow, MessageSelectMenu } = require('discord.js');
+
+const msToTime = function(duration) {
+	  // const milliseconds = parseInt((duration % 1000) / 100);
+	  const seconds = parseInt((duration / 1000) % 60);
+	  const minutes = parseInt((duration / (1000 * 60)) % 60);
+	  const hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+	  return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
+};
 
 module.exports = {
 	name: 'play',
@@ -21,8 +31,7 @@ module.exports = {
 					.setColor('RED')
 					.setTitle('❌ | You are not in a voice channel')
 					.setDescription('Please join a voice channel and try again.')
-					.setTimestamp()
-					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
+					.setTimestamp();
 				return message.channel.send({ embeds: [noVcChannel] }).then(msg => {
 					setTimeout(() => msg.delete(), 20000);
 				}).catch(err => console.error(colors.brightRed(err)));
@@ -50,143 +59,139 @@ module.exports = {
 					.setColor('RED')
 					.setTitle('❌ | There was an error while searching')
 					.setDescription('```\n' + err.message + '\n```')
-					.setTimestamp()
-					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
+					.setTimestamp();
 				return message.channel.send({ embeds: [searchingError] }).then(msg => {
 					setTimeout(() => msg.delete(), 20000);
 				}).catch(err => console.error(colors.brightRed(err)));
 			}
 
-			switch (res.loadType) {
-			case 'NO_MATCHES':
-				if (!player.queue.current) player.destroy();
-				const noMatches = new MessageEmbed()
-					.setColor('RED')
-					.setTitle('❌ | No matches found')
-					.setDescription('Please try again with a different search term.')
-					.setTimestamp()
-					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-				return message.channel.send({ embeds: [noMatches] }).then(msg => {
-					setTimeout(() => msg.delete(), 20000);
-				}).catch(err => console.error(colors.brightRed(err)));
+			try {
+				switch (res.loadType) {
+				case 'NO_MATCHES':
+					if (!player.queue.current) player.destroy();
+					const noMatches = new MessageEmbed()
+						.setColor('RED')
+						.setTitle('❌ | No matches found')
+						.setDescription('Please try again with a different search term.')
+						.setTimestamp();
+					return message.channel.send({ embeds: [noMatches] }).then(msg => {
+						setTimeout(() => msg.delete(), 20000);
+					}).catch(err => console.error(colors.brightRed(err)));
 
-			case 'TRACK_LOADED':
-				player.queue.add(res.tracks[0]);
+				case 'TRACK_LOADED':
+					player.queue.add(res.tracks[0]);
 
-				if (!player.playing && !player.paused && !player.queue.size) player.play();
-				const singleTrackDurationTimeMs = res.tracks[0].duration;
-				const singleTrackDurationTime = {
-					hours: Math.floor(singleTrackDurationTimeMs / 3600000),
-					minutes: Math.floor((singleTrackDurationTimeMs % 3600000) / 60000),
-					seconds: Math.floor((singleTrackDurationTimeMs % 60000) / 1000),
-				};
+					if (!player.playing && !player.paused && !player.queue.size) player.play();
 
-				const trackToQueue = new MessageEmbed()
-					.setColor('GREEN')
-					.setAuthor({ name: `🎵 | Adding: ${res.tracks[0].title} to queue`, iconURL: '', url: res.tracks[0].uri })
-					.addField('Author', `\`\`\`\n❯❯❯ ${res.tracks[0].author}\n\`\`\``, true)
-					.addField('Duration', `\`\`\`\n❯❯❯ ${singleTrackDurationTime.hours ? `${singleTrackDurationTime.hours}h ` : ''}${singleTrackDurationTime.minutes ? `${singleTrackDurationTime.minutes}m ` : ''}${singleTrackDurationTime.seconds}s\n\`\`\``, true)
-					.setThumbnail(res.tracks[0].thumbnail)
-					.setTimestamp()
-					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-				return message.channel.send({ embeds: [trackToQueue] }).then(msg => {
-					setTimeout(() => msg.delete(), 20000);
-				}).catch(err => console.error(colors.brightRed(err)));
+					const trackToQueue = new MessageEmbed()
+						.setColor('GREEN')
+						.setAuthor({ name: `🎵 | Adding: ${res.tracks[0].title} to queue`, iconURL: '', url: res.tracks[0].uri })
+						.addField('Author', `\`\`\`\n❯❯❯ ${res.tracks[0].author}\n\`\`\``, true)
+						.addField('Duration', `\`\`\`\n❯❯❯ ${(await msToTime(res.tracks[0].duration)).toString()}\n\`\`\``, true)
+						.setThumbnail(res.tracks[0].thumbnail)
+						.setTimestamp();
+					return message.channel.send({ embeds: [trackToQueue] }).then(msg => {
+						setTimeout(() => msg.delete(), 20000);
+					}).catch(err => console.error(colors.brightRed(err)));
 
-			case 'PLAYLIST_LOADED':
-				player.queue.add(res.tracks);
+				case 'PLAYLIST_LOADED':
+					player.queue.add(res.tracks);
 
-				if (!player.playing && !player.paused && player.queue.totalSize === res.tracks.length) player.play();
+					if (!player.playing && !player.paused && player.queue.totalSize === res.tracks.length) player.play();
 
-				const playlistDurationTimeMs = res.playlist.duration;
-				const playlistDurationTime = {
-					hours: Math.floor(playlistDurationTimeMs / 3600000),
-					minutes: Math.floor((playlistDurationTimeMs % 3600000) / 60000),
-					seconds: Math.floor((playlistDurationTimeMs % 60000) / 1000),
-				};
+					const playlistToQueue = new MessageEmbed()
+						.setColor('GREEN')
+						.setTitle(`✅ | Adding \`${res.playlist.name}\` playlist with \`${res.tracks.length}\` tracks to queue`)
+						.addField('Duration', `\`\`\`\n❯❯❯ ${(await msToTime(res.playlist.duration)).toString()}\n\`\`\``)
+						.setTimestamp();
+					return message.channel.send({ embeds: [playlistToQueue] }).then(msg => {
+						setTimeout(() => msg.delete(), 20000);
+					}).catch(err => console.error(colors.brightRed(err)));
 
-				const playlistToQueue = new MessageEmbed()
-					.setColor('GREEN')
-					.setTitle(`✅ | Adding \`${res.playlist.name}\` playlist with \`${res.tracks.length}\` tracks to queue`)
-					.addField('Duration', `\`\`\`\n❯❯❯ ${playlistDurationTime.hours ? `${playlistDurationTime.hours}h ` : ''}${playlistDurationTime.minutes ? `${playlistDurationTime.minutes}m ` : ''}${playlistDurationTime.seconds}s\n\`\`\``)
-					.setTimestamp()
-					.setFooter({ text: `Requested by: ${res.playlist.requester.tag}`, iconURL: res.playlist.requester.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-				return message.channel.send({ embeds: [playlistToQueue] }).then(msg => {
-					setTimeout(() => msg.delete(), 20000);
-				}).catch(err => console.error(colors.brightRed(err)));
+				case 'SEARCH_RESULT':
+					const selectMenu = new MessageActionRow()
+						.addComponents(
+							new MessageSelectMenu()
+								.setCustomId('selectmenu')
+								.setPlaceholder('Please select a track to add to the queue')
+								.addOptions([
+									// TODO: Convert MS to HH:MM:SS of a track duration
+									{
+										emoji: '1️⃣',
+										label: `${res.tracks[0].title.substring(0, 95)}`,
+										description: `Author: ${res.tracks[0].author} | Duration: ${(await msToTime(res.tracks[0].duration)).toString()}`,
+										value: '1',
+									},
+									{
+										emoji: '2️⃣',
+										label: `${res.tracks[1].title.substring(0, 95)}`,
+										description: `Author: ${res.tracks[1].author} | Duration: ${(await msToTime(res.tracks[1].duration)).toString()}`,
+										value: '2',
+									},
+									{
+										emoji: '3️⃣',
+										label: `${res.tracks[2].title.substring(0, 95)}`,
+										description: `Author: ${res.tracks[2].author} | Duration: ${(await msToTime(res.tracks[2].duration)).toString()}`,
+										value: '3',
+									},
+									{
+										emoji: '4️⃣',
+										label: `${res.tracks[3].title.substring(0, 95)}`,
+										description: `Author: ${res.tracks[3].author} | Duration: ${(await msToTime(res.tracks[3].duration)).toString()}`,
+										value: '4',
+									},
+									{
+										emoji: '5️⃣',
+										label: `${res.tracks[4].title.substring(0, 95)}`,
+										description: `Author: ${res.tracks[4].author} | Duration: ${(await msToTime(res.tracks[4].duration)).toString()}`,
+										value: '5',
+									},
+									{
+										emoji: '❌',
+										label: 'Cancel the Search',
+										value: '6',
+									},
+								]),
+						);
 
-			case 'SEARCH_RESULT':
-				const selectMenu = new MessageActionRow()
-					.addComponents(
-						new MessageSelectMenu()
-							.setCustomId('selectmenu')
-							.setPlaceholder('Please select a track to add to the queue')
-							.addOptions([
-								{
-									label: `1 - ${res.tracks[0].title}`,
-									description: `Author: ${res.tracks[0].author} | Duration: ${res.tracks[0].duration}`,
-									value: '1',
-								},
-								{
-									label: `2 - ${res.tracks[1].title}`,
-									description: `Author: ${res.tracks[1].author} | Duration: ${res.tracks[1].duration}`,
-									value: '2',
-								},
-								{
-									label: `3 - ${res.tracks[2].title}`,
-									description: `Author: ${res.tracks[2].author} | Duration: ${res.tracks[2].duration}`,
-									value: '3',
-								},
-								{
-									label: `4 - ${res.tracks[3].title}`,
-									description: `Author: ${res.tracks[3].author} | Duration: ${res.tracks[3].duration}`,
-									value: '4',
-								},
-								{
-									label: `5 - ${res.tracks[4].title}`,
-									description: `Author: ${res.tracks[4].author} | Duration: ${res.tracks[4].duration}`,
-									value: '5',
-								},
-							]),
-					);
+					const selectMenuEmbed = new MessageEmbed()
+						.setTitle('🔍 | Search Results')
+						.setDescription('Select a track to add to the queue above on menu')
+						.setColor('GREEN')
+						.setTimestamp();
+					const selectMsg = await message.channel.send({ embeds: [selectMenuEmbed], components: [selectMenu] });
 
-				const selectMenuEmbed = new MessageEmbed()
-					.setTitle('🔍 | Search Results')
-					.setDescription('Select a track to add to the queue above on menu')
-					.setColor('GREEN')
-					.setTimestamp()
-					.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-				const selectMsg = await message.channel.send({ embeds: [selectMenuEmbed], components: [selectMenu] });
+					const collector = selectMsg.createMessageComponentCollector({ max: 1, componentType: 'SELECT_MENU', time: 30000 });
+					// eslint-disable-next-line no-undef
+					collector.on('collect', m => {
+						if (Number(m.values) === 6) {
+							collector.stop();
+							selectMsg.delete();
+							return message.react('👌🏻');
+						}
+						else {
+							const index = Number(m.values) - 1;
+							const track = res.tracks[index];
+							player.queue.add(track);
 
-				// make select menu collector
-				const collector = selectMsg.createMessageComponentCollector({ max: 1, componentType: 'SELECT_MENU', time: 15000 });
-				// eslint-disable-next-line no-undef
-				collector.on('collect', m => {
-					if (m.content === 'end') {
-						collector.stop();
-						selectMsg.delete();
-						return message.react('👌🏻');
-					}
-					else {
-						console.log(m.values);
+							if (!player.playing && !player.paused && player.queue.totalSize === 1) player.play();
 
-						const index = Number(m.values) - 1;
-						const track = res.tracks[index];
-						player.queue.add(track);
-
-						if (!player.playing && !player.paused && player.queue.totalSize === 1) player.play();
-
-						const singleTrackToQueue = new MessageEmbed()
-							.setColor('GREEN')
-							.setTitle(`✅ | Adding \`${track.title}\` to queue`)
-							.setThumbnail(track.thumbnail)
-							.setTimestamp()
-							.setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) });
-						return selectMsg.edit({ embeds: [singleTrackToQueue], components: [] }).then(msg => {
-							setTimeout(() => msg.delete(), 20000);
-						}).catch(err => console.error(colors.brightRed(err)));
-					}
-				});
+							const singleTrackToQueue = new MessageEmbed()
+								.setColor('GREEN')
+								.setAuthor({ name: `🎵 | Adding: ${track.title} to queue`, iconURL: '', url: track.uri })
+								.addField('Duration', `\`\`\`\n❯❯❯ ${(msToTime(track.duration)).toString()}\n\`\`\``)
+								.setThumbnail(track.thumbnail)
+								.setTimestamp();
+							return selectMsg.edit({ embeds: [singleTrackToQueue], components: [] }).then(msg => {
+								setTimeout(() => msg.delete(), 20000);
+							}).catch(err => console.error(colors.brightRed(err)));
+						}
+					});
+				}
+			}
+			catch (error) {
+				console.error(colors.brightRed(error));
+				return message.react('❌');
 			}
 		}
 		catch (error) {
