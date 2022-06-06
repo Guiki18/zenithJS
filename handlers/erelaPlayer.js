@@ -253,16 +253,17 @@ module.exports = async function(client) {
 					await msgCollector.delete();
 					break;
 				}
-				client.manager.on('trackEnd', async (playerT) => {
-					const data = db.prepare('SELECT * FROM musicPlayer WHERE guildid = ?').get(playerT.guild);
-					const messageToUpdate = client.channels.cache.get(data.messageid);
-					if (!messageToUpdate) {return;}
-					else {
-						await collector.stop();
-						await messageToUpdate.delete();
-					}
-				});
 			});
+		})
+		.on('trackEnd', async (playerT) => {
+			const data = db.prepare('SELECT * FROM musicPlayer WHERE guildid = ?').get(playerT.guild);
+			console.log(data);
+			const messageToUpdate = client.channels.cache.get(data.messageid);
+			if (!messageToUpdate) {return;}
+			else {
+				await collector.stop();
+				await messageToUpdate.delete();
+			}
 		})
 		.on('queueEnd', player => {
 			const channel = client.channels.cache.get(player.textChannel);
