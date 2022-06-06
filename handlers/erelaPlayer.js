@@ -257,7 +257,6 @@ module.exports = async function(client) {
 		})
 		.on('trackEnd', async (playerT) => {
 			const data = db.prepare('SELECT * FROM musicPlayer WHERE guildid = ?').get(playerT.guild);
-			console.log(data);
 			const messageToUpdate = client.channels.cache.get(data.messageid);
 			if (!messageToUpdate) {return;}
 			else {
